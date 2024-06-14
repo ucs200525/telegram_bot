@@ -172,8 +172,13 @@ async def main_handler(update: Update, context: CallbackContext):
 def main():
     # Prompt user to enter tokens and paths
     opencage_api_key = '699522e909454a09b82d1c728fc79925'
-    excel_file_path = r'C:\Users\sree\telegram_bot\Copy Completed_eng_Bharghava_Siddhanta_Panchangam.xlsx'
-    image_save_path = 'C:\\Users\\sree\\telegram_bot\\imageTo.png'
+    excel_file_path = '/usr/src/app/Copy Completed_eng_Bharghava_Siddhanta_Panchangam.xlsx'
+    image_save_path =  '/usr/src/app/imageTo.png'
+    
+        
+    #'C:\Users\sree\telegram_bot\Copy Completed_eng_Bharghava_Siddhanta_Panchangam.xlsx'*/
+    #r'C:\\Users\\sree\\telegram_bot\\imageTo.png'
+   
     bot_token ='7274941037:AAHIWiU5yvfIzo7eJWPu9S5CeJIid6ATEyM'
 
 
