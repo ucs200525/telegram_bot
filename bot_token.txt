@@ -1,4 +1,2 @@
     opencage_api_key = '699522e909454a09b82d1c728fc79925'
-    excel_file_path = 'C:\\Users\\sree\\Desktop\\Completed_eng_Bharghava_Siddhanta_Panchangam.xlsx'
-    image_save_path = r'C:\Users\sree\Desktop\imageTo.png'
     bot_token  ='7274941037:AAHIWiU5yvfIzo7eJWPu9S5CeJIid6ATEyM'
