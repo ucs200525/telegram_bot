@@ -9,12 +9,18 @@ from openpyxl import load_workbook
 from opencage.geocoder import OpenCageGeocode
 import win32com.client
 from PIL import ImageGrab
+import logging
+import shutil
+
+# Set up logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # Define conversation state
 LOCATION = 0
 
 # Function to get sunrise and sunset times
 def get_sun_times(lat, lng, local_tz):
+    print("Fetching sunrise and sunset times")
     today = datetime.now().strftime('%Y-%m-%d')
     tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
 
@@ -37,8 +43,13 @@ def get_sun_times(lat, lng, local_tz):
 
 # Function to update Excel file
 def update_excel(file_path, sunrise_today, sunset_today, sunrise_tomorrow):
+    print("Updating the Excel file")
+    # Copy the file to avoid permission issues
+    temp_file_path = file_path.replace('.xlsx', '_temp.xlsx')
+    shutil.copy(file_path, temp_file_path)
+
     # Load the workbook and select the active worksheet
-    wb = load_workbook(file_path)
+    wb = load_workbook(temp_file_path)
     ws = wb.active
     
     # Update the specific cells
@@ -47,10 +58,14 @@ def update_excel(file_path, sunrise_today, sunset_today, sunrise_tomorrow):
     ws['O6'] = sunrise_tomorrow.strftime('%H:%M:%S')
 
     # Save the workbook
-    wb.save(file_path)
+    wb.save(temp_file_path)
+    print("Excel file updated")
+
+    return temp_file_path
 
 # Function to save Excel range as image
 def save_excel_range_as_image(file_path, save_path):
+    print("Saving Excel range as image")
     if platform.system() == 'Windows':
         # Initialize Excel application
         excel = win32com.client.Dispatch('Excel.Application')
@@ -73,17 +88,25 @@ def save_excel_range_as_image(file_path, save_path):
         wb_new = excel.Workbooks.Add()
         ws_new = wb_new.ActiveSheet
         ws_new.Paste()
-        
+
+        # Check for shapes
+        shapes = ws_new.Shapes
+        shape_names = [shape.Name for shape in shapes]
+        print(f"Shapes in worksheet: {shape_names}")
+
         # Copy the picture as a shape
-        ws_new.Shapes('Picture 1').Copy()
-        
-        # Grab the image from clipboard and save
-        img = ImageGrab.grabclipboard()
-        if img:
-            img.save(save_path)
-            print(f'Image saved successfully at: {save_path}')
+        if 'Picture 1' in shape_names:
+            ws_new.Shapes('Picture 1').Copy()
+            
+            # Grab the image from clipboard and save
+            img = ImageGrab.grabclipboard()
+            if img:
+                img.save(save_path)
+                print(f'Image saved successfully at: {save_path}')
+            else:
+                print('Failed to capture image from clipboard.')
         else:
-            print('Failed to capture image from clipboard.')
+            print("Shape 'Picture 1' not found.")
         
         # Close workbook without saving changes
         wb.Close(SaveChanges=False)
@@ -91,6 +114,7 @@ def save_excel_range_as_image(file_path, save_path):
         
         # Quit Excel application
         excel.Quit()
+        print("Excel application closed")
     else:
         print('Error: This functionality is only supported on Windows.')
 
@@ -102,6 +126,7 @@ async def send_table_start(update: Update, context: CallbackContext):
 # Function to handle location input and send the table with image
 async def receive_location(update: Update, context: CallbackContext):
     location = update.message.text
+    print(f"Received location: {location}")
 
     # Use OpenCage Geocoder to get coordinates
     geocoder = OpenCageGeocode(context.bot_data['opencage_api_key'])
@@ -118,14 +143,19 @@ async def receive_location(update: Update, context: CallbackContext):
 
         # Update the Excel file
         file_path = context.bot_data['excel_file_path']
-        update_excel(file_path, sunrise_today, sunset_today, sunrise_tomorrow)
+        try:
+            updated_file_path = update_excel(file_path, sunrise_today, sunset_today, sunrise_tomorrow)
 
-        # Save Excel range as image
-        save_image_path = context.bot_data['image_save_path']
-        save_excel_range_as_image(file_path, save_image_path)
+            # Save Excel range as image
+            save_image_path = context.bot_data['image_save_path']
+            save_excel_range_as_image(updated_file_path, save_image_path)
 
-        # Send the saved image
-        await update.message.reply_photo(photo=open(save_image_path, 'rb'))
+            # Send the saved image
+            print("Sending the saved image")
+            await update.message.reply_photo(photo=open(save_image_path, 'rb'))
+        except Exception as e:
+            logging.error(f"Error updating Excel file: {e}")
+            await update.message.reply_text(f"An error occurred while updating the Excel file: {e}")
 
         # End the conversation
         return ConversationHandler.END
@@ -141,10 +171,11 @@ async def main_handler(update: Update, context: CallbackContext):
 
 def main():
     # Prompt user to enter tokens and paths
-    opencage_api_key = 'OPENCAGE_API_KEY'
-    excel_file_path = 'BOT_TOKEN'
+    opencage_api_key = '699522e909454a09b82d1c728fc79925'
+    excel_file_path = r'C:\Users\sree\telegram_bot\Copy Completed_eng_Bharghava_Siddhanta_Panchangam.xlsx'
     image_save_path = 'C:\\Users\\sree\\telegram_bot\\imageTo.png'
-    bot_token  ='7274941037:AAHIWiU5yvfIzo7eJWPu9S5CeJIid6ATEyM'
+    bot_token ='7274941037:AAHIWiU5yvfIzo7eJWPu9S5CeJIid6ATEyM'
+
 
     # Create the Application instance
     application = Application.builder().token(bot_token).build()
